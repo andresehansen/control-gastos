@@ -22,6 +22,7 @@ const views = {
     auth: document.getElementById('auth-view'),
     dashboard: document.getElementById('dashboard-view'),
     transactions: document.getElementById('transactions-view'),
+    reports: document.getElementById('reports-view'),
     budgets: document.getElementById('budgets-view'),
     config: document.getElementById('config-view')
 };
@@ -93,6 +94,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Filtros interactivos
     document.getElementById('filter-mes').addEventListener('change', renderizarTransaccionesYFiltros);
     document.getElementById('filter-categoria').addEventListener('change', renderizarTransaccionesYFiltros);
+
+    // Eventos de selección de rango en Reportes
+    ['dia', 'semana', 'mes'].forEach(rango => {
+        document.getElementById(`btn-group-${rango}`).addEventListener('click', (e) => {
+            document.querySelectorAll('#reports-view .btn-toggle').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+            renderizarReportesAgrupados(rango);
+        });
+    });
 });
 
 // Configuración de los botones del teclado PIN en pantalla y teclado físico
@@ -253,6 +263,7 @@ async function cargarDatos() {
         // Actualizar UI
         actualizarResumenFinanciero();
         renderizarTransaccionesYFiltros();
+        renderizarReportesAgrupados('dia');
         actualizarProgresoPresupuestos();
         renderizarGraficos();
     } catch (error) {
@@ -701,4 +712,128 @@ function mostrarVista(vistaNombre) {
             link.classList.remove('active');
         }
     });
+
+    // Cargar reportes si entra a la vista de reportes
+    if (vistaNombre === 'reports') {
+        const activeRange = document.querySelector('#reports-view .btn-toggle.active').id.replace('btn-group-', '');
+        renderizarReportesAgrupados(activeRange);
+    }
 }
+
+// ==========================================================================
+// 7. LÓGICA DE REPORTES AGRUPADOS (ACORDEÓN)
+// ==========================================================================
+
+function renderizarReportesAgrupados(rango = 'dia') {
+    const container = document.getElementById('reports-list-container');
+    container.innerHTML = '';
+
+    if (transacciones.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No hay transacciones registradas para agrupar.</div>`;
+        return;
+    }
+
+    const grupos = {};
+
+    transacciones.forEach(t => {
+        const dateObj = new Date(t.fecha + 'T00:00:00');
+        let claveGrupo = '';
+        let labelGrupo = '';
+
+        if (rango === 'dia') {
+            claveGrupo = t.fecha;
+            labelGrupo = dateObj.toLocaleDateString('es-ES', {
+                weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
+            });
+            // Capitalizar primer letra del dia
+            labelGrupo = labelGrupo.charAt(0).toUpperCase() + labelGrupo.slice(1);
+        } else if (rango === 'semana') {
+            // Obtener rango de lunes a domingo para esa fecha
+            const primerDiaSemana = new Date(dateObj);
+            const diaSemana = dateObj.getDay(); // 0: Dom, 1: Lun...
+            const dif = dateObj.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1); // Ajustar a Lunes
+            primerDiaSemana.setDate(dif);
+            
+            const ultimoDiaSemana = new Date(primerDiaSemana);
+            ultimoDiaSemana.setDate(primerDiaSemana.getDate() + 6);
+
+            const format = { day: '2-digit', month: 'short' };
+            claveGrupo = `${primerDiaSemana.toISOString().split('T')[0]}_semana`;
+            labelGrupo = `Semana: ${primerDiaSemana.toLocaleDateString('es-ES', format)} - ${ultimoDiaSemana.toLocaleDateString('es-ES', format)}`;
+        } else if (rango === 'mes') {
+            const anio = dateObj.getFullYear();
+            const mes = dateObj.getMonth();
+            claveGrupo = `${anio}-${mes}`;
+            const nombreMes = dateObj.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            labelGrupo = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+        }
+
+        if (!grupos[claveGrupo]) {
+            grupos[claveGrupo] = {
+                label: labelGrupo,
+                ingresos: 0,
+                gastos: 0,
+                transacciones: []
+            };
+        }
+
+        if (t.monto > 0) {
+            grupos[claveGrupo].ingresos += t.monto;
+        } else {
+            grupos[claveGrupo].gastos += Math.abs(t.monto);
+        }
+        grupos[claveGrupo].transacciones.push(t);
+    });
+
+    // Ordenar los grupos cronológicamente descendente
+    const clavesOrdenadas = Object.keys(grupos).sort((a, b) => b.localeCompare(a));
+
+    clavesOrdenadas.forEach(clave => {
+        const g = grupos[clave];
+        const balanceNeto = g.ingresos - g.gastos;
+        const netoClase = balanceNeto >= 0 ? 'positivo' : 'negativo';
+        const netoSigno = balanceNeto >= 0 ? '+' : '-';
+
+        const card = document.createElement('div');
+        card.className = 'report-group-card';
+        
+        card.innerHTML = `
+            <div class="report-group-header">
+                <span class="report-group-title">${g.label}</span>
+                <div class="report-group-summary">
+                    <span class="report-summary-badge ingreso">+$${g.ingresos.toFixed(2)}</span>
+                    <span class="report-summary-badge gasto">-$${g.gastos.toFixed(2)}</span>
+                    <span class="report-summary-badge neto ${netoClase}">${netoSigno}$${Math.abs(balanceNeto).toFixed(2)}</span>
+                    <span class="report-group-icon">▼</span>
+                </div>
+            </div>
+            <div class="report-group-details">
+                <!-- Listado interno de transacciones del grupo -->
+                <div style="display: flex; flex-direction: column;">
+                    ${g.transacciones.map(t => {
+                        const sign = t.monto > 0 ? '+' : '-';
+                        const tClass = t.monto > 0 ? 'ingreso' : 'gasto';
+                        const fechaT = new Date(t.fecha + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                        return `
+                            <div class="report-detail-item">
+                                <div class="report-detail-info">
+                                    <h5>${t.categoria}</h5>
+                                    <span>${fechaT} • ${t.metodo_pago} ${t.descripcion ? `• ${t.descripcion}` : ''}</span>
+                                </div>
+                                <span class="report-detail-amount ${tClass}">${sign}$${Math.abs(t.monto).toFixed(2)}</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+
+        // Asignar toggle para abrir/cerrar el acordeón
+        card.querySelector('.report-group-header').addEventListener('click', () => {
+            card.classList.toggle('open');
+        });
+
+        container.appendChild(card);
+    });
+}
+

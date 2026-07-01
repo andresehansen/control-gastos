@@ -27,6 +27,7 @@
             <nav class="nav-desktop" id="nav-desktop">
                 <a class="nav-link active" data-target="dashboard-view">Dashboard</a>
                 <a class="nav-link" data-target="transactions-view">Transacciones</a>
+                <a class="nav-link" data-target="reports-view">Reportes</a>
                 <a class="nav-link" data-target="budgets-view">Presupuestos</a>
                 <a class="nav-link" data-target="config-view">Configuración</a>
                 <a class="nav-link" id="btn-logout" style="display: none; color: var(--danger);">Cerrar Sesión</a>
@@ -34,7 +35,7 @@
         </header>
 
         <!-- PANTALLA: CONFIGURACIÓN INICIAL / CREDENCIALES (SUPABASE) -->
-        <section id="setup-view" class="view-section active">
+        <section id="setup-view" class="view-section">
             <div class="card config-box">
                 <h3 style="margin-bottom: 12px; font-size: 1.4rem;">Configuración de Sincronización</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem;">
@@ -58,7 +59,7 @@
         </section>
 
         <!-- PANTALLA: AUTENTICACIÓN (LOGIN POR PIN) -->
-        <section id="auth-view" class="view-section">
+        <section id="auth-view" class="view-section active">
             <div class="card auth-container" style="text-align: center;">
                 <h3 style="margin-bottom: 8px; font-size: 1.4rem;">Acceso a FinanzasPro</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 0.9rem;">Ingresa tu código numérico de acceso</p>
@@ -159,7 +160,7 @@
                         <div class="form-group">
                             <label for="tx-categoria">Categoría</label>
                             <select id="tx-categoria" required>
-                                <!-- Se rellena dinámicamente con JS para variar según tipo de transaccion -->
+                                <!-- Se rellena dinámicamente con JS -->
                             </select>
                         </div>
 
@@ -221,6 +222,25 @@
 
                 <!-- Contenedor del listado -->
                 <div class="transaction-list" id="transaction-list-container">
+                    <!-- Se rellena dinámicamente con JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- PANTALLA: REPORTES AGRUPADOS -->
+        <section id="reports-view" class="view-section">
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">Detalle de Movimientos Agrupados</h3>
+                
+                <!-- Selectores de Rango de Agrupación -->
+                <div class="btn-group" style="max-width: 400px; margin-bottom: 24px; grid-template-columns: repeat(3, 1fr);">
+                    <button type="button" class="btn-toggle active" id="btn-group-dia">Por Día</button>
+                    <button type="button" class="btn-toggle" id="btn-group-semana">Por Semana</button>
+                    <button type="button" class="btn-toggle" id="btn-group-mes">Por Mes</button>
+                </div>
+
+                <!-- Contenedor del Desglose de Reportes -->
+                <div id="reports-list-container" style="display: flex; flex-direction: column; gap: 16px;">
                     <!-- Se rellena dinámicamente con JS -->
                 </div>
             </div>
@@ -290,6 +310,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
                 <span>Transacciones</span>
             </a>
+            <a class="nav-mobile-item" data-target="reports-view">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>
+                <span>Reportes</span>
+            </a>
             <a class="nav-mobile-item" data-target="budgets-view">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
                 <span>Límites</span>
@@ -301,6 +325,6 @@
         </nav>
     </div>
 
-    <script src="app.js?v=2"></script>
+    <script src="app.js?v=3"></script>
 </body>
 </html>

@@ -551,3 +551,129 @@ input:focus, select:focus, textarea:focus {
         margin-bottom: 4px;
     }
 }
+
+/* ==========================================================================
+   REPORTES AGRUPADOS Y ACORDEONES
+   ========================================================================== */
+
+.report-group-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.report-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    cursor: pointer;
+    background-color: var(--bg-secondary);
+    user-select: none;
+    transition: var(--transition);
+}
+
+.report-group-header:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.report-group-title {
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.report-group-summary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.report-summary-badge {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.report-summary-badge.ingreso {
+    color: var(--success);
+}
+
+.report-summary-badge.gasto {
+    color: var(--danger);
+}
+
+.report-summary-badge.neto {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
+.report-summary-badge.neto.positivo {
+    background-color: var(--success-light);
+    color: var(--success);
+}
+
+.report-summary-badge.neto.negativo {
+    background-color: var(--danger-light);
+    color: var(--danger);
+}
+
+.report-group-icon {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    transition: transform 0.25s ease;
+}
+
+.report-group-card.open .report-group-icon {
+    transform: rotate(180deg);
+}
+
+.report-group-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0, 1, 0, 1);
+    background-color: var(--bg-primary);
+    border-top: 1px solid transparent;
+}
+
+.report-group-card.open .report-group-details {
+    max-height: 2000px; /* Suficientemente grande para contener la lista */
+    border-top: 1px solid var(--border-color);
+    transition: max-height 0.3s cubic-bezier(1, 0, 1, 0);
+}
+
+.report-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.report-detail-item:last-child {
+    border-bottom: none;
+}
+
+.report-detail-info h5 {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.report-detail-info span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.report-detail-amount {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.report-detail-amount.ingreso {
+    color: var(--success);
+}
+
+.report-detail-amount.gasto {
+    color: var(--danger);
+}
