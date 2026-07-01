@@ -165,26 +165,23 @@ async function manejarAutenticacionPIN(e) {
         return;
     }
 
-    // Usamos dominio .com para que Supabase no rechace el correo por formato inválido
-    const email = `pin_${pin}@finanzaspro.com`;
-    const password = `super_secure_pass_${pin}`;
-
     try {
-        // Intentar iniciar sesión
-        let response = await supabaseClient.auth.signInWithPassword({ email, password });
+        // Para sincronizar PC y Celular sin usar correos electrónicos ni gatillar el rate limit,
+        // utilizaremos un sistema de inicio de sesión anónimo en Supabase.
+        // Iniciamos sesión de manera anónima
+        const { data, error } = await supabaseClient.auth.signInAnonymously();
 
-        // Si el usuario no existe, lo registramos automáticamente de forma transparente
-        if (response.error && response.error.message.includes('Invalid login credentials')) {
-            let signUpResponse = await supabaseClient.auth.signUp({ email, password });
-            if (signUpResponse.error) throw signUpResponse.error;
-            
-            // Re-intentar login tras registro automático exitoso
-            response = await supabaseClient.auth.signInWithPassword({ email, password });
-        }
+        if (error) throw error;
 
-        if (response.error) throw response.error;
+        // Guardamos el PIN ingresado localmente como identificador para filtrar los datos.
+        // Aunque la sesión de Supabase sea anónima, asociaremos las transacciones
+        // a este PIN específico en la base de datos para que si cambias de PIN o dispositivo,
+        // se acceda a la base de datos correcta.
+        currentUser = data.user;
+        
+        // Guardamos el PIN en LocalStorage para identificar los datos del usuario actual
+        localStorage.setItem('user_pin', pin);
 
-        currentUser = response.data.user;
         document.getElementById('btn-logout').style.display = 'block';
         mostrarVista('dashboard');
         await cargarDatos();
@@ -223,20 +220,25 @@ async function cerrarSesion() {
 async function cargarDatos() {
     if (!supabaseClient || !currentUser) return;
 
+    const pin = localStorage.getItem('user_pin');
+    if (!pin) return;
+
     try {
-        // Cargar Transacciones
+        // Cargar Transacciones filtradas por el PIN
         let { data: txData, error: txError } = await supabaseClient
             .from('transacciones')
             .select('*')
+            .eq('pin', pin)
             .order('fecha', { ascending: false });
 
         if (txError) throw txError;
         transacciones = txData || [];
 
-        // Cargar Presupuestos
+        // Cargar Presupuestos filtrados por el PIN
         let { data: bData, error: bError } = await supabaseClient
             .from('presupuestos')
-            .select('*');
+            .select('*')
+            .eq('pin', pin);
 
         if (bError) throw bError;
         presupuestos = bData || [];
@@ -262,6 +264,9 @@ async function guardarTransaccion(e) {
     e.preventDefault();
     if (!supabaseClient || !currentUser) return;
 
+    const pin = localStorage.getItem('user_pin');
+    if (!pin) return;
+
     const tipo = document.querySelector('.btn-toggle.active').dataset.type;
     const rawMonto = parseFloat(document.getElementById('tx-monto').value);
     const monto = tipo === 'gasto' ? -Math.abs(rawMonto) : Math.abs(rawMonto);
@@ -275,6 +280,7 @@ async function guardarTransaccion(e) {
             .from('transacciones')
             .insert([{
                 user_id: currentUser.id,
+                pin,
                 monto,
                 tipo,
                 categoria,
@@ -316,12 +322,15 @@ async function guardarPresupuesto(e) {
     e.preventDefault();
     if (!supabaseClient || !currentUser) return;
 
+    const pin = localStorage.getItem('user_pin');
+    if (!pin) return;
+
     const categoria = document.getElementById('budget-categoria').value;
     const monto_limite = parseFloat(document.getElementById('budget-monto').value);
 
     try {
-        // Comprobar si ya existe presupuesto para esa categoría para actualizar o insertar
-        const existe = presupuestos.find(b => b.categoria === categoria);
+        // Comprobar si ya existe presupuesto para esa categoría para este PIN
+        const existe = presupuestos.find(b => b.categoria === categoria && b.pin === pin);
         
         let error;
         if (existe) {
@@ -333,7 +342,7 @@ async function guardarPresupuesto(e) {
         } else {
             let res = await supabaseClient
                 .from('presupuestos')
-                .insert([{ user_id: currentUser.id, categoria, monto_limite }]);
+                .insert([{ user_id: currentUser.id, pin, categoria, monto_limite }]);
             error = res.error;
         }
 
