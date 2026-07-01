@@ -341,11 +341,11 @@ function actualizarResumenFinanciero() {
 
     const balance = ingresos - gastos;
 
-    document.getElementById('total-ingresos').textContent = `$${ingresos.toFixed(2)}`;
-    document.getElementById('total-gastos').textContent = `$${gastos.toFixed(2)}`;
+    document.getElementById('total-ingresos').textContent = formatearMoneda(ingresos);
+    document.getElementById('total-gastos').textContent = formatearMoneda(gastos);
     
     const balanceEl = document.getElementById('total-balance');
-    balanceEl.textContent = `$${balance.toFixed(2)}`;
+    balanceEl.textContent = formatearMoneda(balance);
     if (balance < 0) {
         balanceEl.style.color = 'var(--danger)';
     } else {
@@ -387,15 +387,13 @@ function renderizarTransaccionesYFiltros() {
             day: '2-digit', month: 'short', year: 'numeric'
         });
 
-        const sign = t.monto > 0 ? '+' : '-';
-
         item.innerHTML = `
             <div class="tx-info">
                 <h4>${t.categoria}</h4>
                 <span>${fechaFormateada} • ${t.metodo_pago} ${t.descripcion ? `• ${t.descripcion}` : ''}</span>
             </div>
             <div class="tx-amount-area">
-                <span class="tx-amount ${t.tipo}">${sign}$${Math.abs(t.monto).toFixed(2)}</span>
+                <span class="tx-amount ${t.tipo}">${formatearMoneda(t.monto, true)}</span>
                 <button class="btn-edit" data-id="${t.id}" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.1rem; padding:4px; transition:var(--transition); margin-right:4px;">✏️</button>
                 <button class="btn-delete" data-id="${t.id}">✕</button>
             </div>
@@ -454,7 +452,7 @@ function actualizarProgresoPresupuestos() {
         item.innerHTML = `
             <div class="budget-info">
                 <span>${b.categoria}</span>
-                <span>$${gastado.toFixed(2)} / $${b.monto_limite.toFixed(2)}</span>
+                <span>${formatearMoneda(gastado)} / ${formatearMoneda(b.monto_limite)}</span>
             </div>
             <div class="budget-progress-bar">
                 <div class="budget-progress-fill ${colorClase}" style="width: ${porcentaje}%"></div>
@@ -712,9 +710,9 @@ function renderizarReportesAgrupados(rango = 'dia') {
             <div class="report-group-header">
                 <span class="report-group-title">${g.label}</span>
                 <div class="report-group-summary">
-                    <span class="report-summary-badge ingreso">+$${g.ingresos.toFixed(2)}</span>
-                    <span class="report-summary-badge gasto">-$${g.gastos.toFixed(2)}</span>
-                    <span class="report-summary-badge neto ${netoClase}">${netoSigno}$${Math.abs(balanceNeto).toFixed(2)}</span>
+                    <span class="report-summary-badge ingreso">${formatearMoneda(g.ingresos, true)}</span>
+                    <span class="report-summary-badge gasto">${formatearMoneda(-g.gastos, false)}</span>
+                    <span class="report-summary-badge neto ${netoClase}">${formatearMoneda(balanceNeto, true)}</span>
                     <span class="report-group-icon">▼</span>
                 </div>
             </div>
@@ -722,7 +720,6 @@ function renderizarReportesAgrupados(rango = 'dia') {
                 <!-- Listado interno de transacciones del grupo -->
                 <div style="display: flex; flex-direction: column;">
                     ${g.transacciones.map(t => {
-                        const sign = t.monto > 0 ? '+' : '-';
                         const tClass = t.monto > 0 ? 'ingreso' : 'gasto';
                         const fechaT = new Date(t.fecha + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
                         return `
@@ -731,7 +728,7 @@ function renderizarReportesAgrupados(rango = 'dia') {
                                     <h5>${t.categoria}</h5>
                                     <span>${fechaT} • ${t.metodo_pago} ${t.descripcion ? `• ${t.descripcion}` : ''}</span>
                                 </div>
-                                <span class="report-detail-amount ${tClass}">${sign}$${Math.abs(t.monto).toFixed(2)}</span>
+                                <span class="report-detail-amount ${tClass}">${formatearMoneda(t.monto, true)}</span>
                             </div>
                         `;
                     }).join('')}
@@ -824,6 +821,19 @@ function cancelarEdicion() {
     if (cancelBtn) {
         cancelBtn.remove();
     }
+}
+
+// Formatea los valores numéricos a formato regional de Argentina ($1.234.567,89)
+function formatearMoneda(valor, mostrarSigno = false) {
+    const valorAbsoluto = Math.abs(valor);
+    const formatoAR = new Intl.NumberFormat('es-AR', {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(valorAbsoluto);
+
+    const signo = valor < 0 ? '-' : (valor > 0 && mostrarSigno ? '+' : '');
+    return `${signo}$${formatoAR}`;
 }
 
 
