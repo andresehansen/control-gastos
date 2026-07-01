@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanzasPro - Control de Ingresos y Gastos</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Carga del SDK de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Carga de Chart.js para los gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Encabezado de la Aplicación -->
+        <header>
+            <div class="logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                <span>FinanzasPro</span>
+            </div>
+            
+            <!-- Navegación de Escritorio -->
+            <nav class="nav-desktop" id="nav-desktop">
+                <a class="nav-link active" data-target="dashboard-view">Dashboard</a>
+                <a class="nav-link" data-target="transactions-view">Transacciones</a>
+                <a class="nav-link" data-target="budgets-view">Presupuestos</a>
+                <a class="nav-link" data-target="config-view">Configuración</a>
+                <a class="nav-link" id="btn-logout" style="display: none; color: var(--danger);">Cerrar Sesión</a>
+            </nav>
+        </header>
+
+        <!-- PANTALLA: CONFIGURACIÓN INICIAL / CREDENCIALES (SUPABASE) -->
+        <section id="setup-view" class="view-section active">
+            <div class="card config-box">
+                <h3 style="margin-bottom: 12px; font-size: 1.4rem;">Configuración de Sincronización</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem;">
+                    Para sincronizar tu celular y PC, necesitamos conectar tu base de datos gratuita de Supabase. A continuación, ingresa las credenciales obtenidas al crear tu cuenta.
+                </p>
+                <form id="setup-form">
+                    <div class="form-group">
+                        <label for="setup-url">SUPABASE URL</label>
+                        <input type="url" id="setup-url" placeholder="https://xxxxxx.supabase.co" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="setup-key">SUPABASE ANON KEY</label>
+                        <input type="password" id="setup-key" placeholder="Tu Anon Key pública" required>
+                    </div>
+                    <button type="submit" class="btn">Guardar y Conectar</button>
+                </form>
+                <div style="margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+                    Tus credenciales se guardan localmente en tu dispositivo y nunca se comparten públicamente.
+                </div>
+            </div>
+        </section>
+
+        <!-- PANTALLA: AUTENTICACIÓN (LOGIN/REGISTRO) -->
+        <section id="auth-view" class="view-section">
+            <div class="card auth-container">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="tab-login">Iniciar Sesión</button>
+                    <button class="auth-tab" id="tab-register">Registrarse</button>
+                </div>
+
+                <form id="auth-form">
+                    <div class="form-group">
+                        <label for="auth-email">Correo Electrónico</label>
+                        <input type="email" id="auth-email" placeholder="correo@ejemplo.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="auth-password">Contraseña</label>
+                        <input type="password" id="auth-password" placeholder="Mínimo 6 caracteres" required>
+                    </div>
+                    <button type="submit" class="btn" id="btn-auth-submit">Ingresar</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- PANTALLA: DASHBOARD PRINCIPAL -->
+        <section id="dashboard-view" class="view-section">
+            <!-- Tarjetas de Resumen Financiero -->
+            <div class="summary-grid">
+                <div class="card summary-card">
+                    <div class="summary-icon ingresos">
+                        <span>↑</span>
+                    </div>
+                    <div class="summary-details">
+                        <p>Ingresos del Mes</p>
+                        <h2 id="total-ingresos">$0.00</h2>
+                    </div>
+                </div>
+                <div class="card summary-card">
+                    <div class="summary-icon gastos">
+                        <span>↓</span>
+                    </div>
+                    <div class="summary-details">
+                        <p>Gastos del Mes</p>
+                        <h2 id="total-gastos">$0.00</h2>
+                    </div>
+                </div>
+                <div class="card summary-card">
+                    <div class="summary-icon balance">
+                        <span>⇄</span>
+                    </div>
+                    <div class="summary-details">
+                        <p>Balance Neto</p>
+                        <h2 id="total-balance">$0.00</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grilla Principal del Dashboard -->
+            <div class="dashboard-grid">
+                <!-- Panel Izquierdo: Gráficos y Reportes -->
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">Análisis de Gastos e Ingresos</h3>
+                    <div class="charts-container">
+                        <div>
+                            <h4 style="text-align: center; margin-bottom: 10px; font-weight: 500; font-size: 0.9rem;">Distribución de Gastos</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="chart-pie"></canvas>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 style="text-align: center; margin-bottom: 10px; font-weight: 500; font-size: 0.9rem;">Ingresos vs Gastos</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="chart-bar"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel Derecho: Entrada Rápida de Transacciones -->
+                <div class="card">
+                    <h3 style="margin-bottom: 16px;">Nuevo Registro</h3>
+                    <form id="tx-form">
+                        <div class="btn-group">
+                            <button type="button" class="btn-toggle active" data-type="gasto">Gasto</button>
+                            <button type="button" class="btn-toggle" data-type="ingreso">Ingreso</button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="tx-monto">Monto</label>
+                            <input type="number" step="0.01" id="tx-monto" placeholder="0.00" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tx-categoria">Categoría</label>
+                            <select id="tx-categoria" required>
+                                <!-- Se rellena dinámicamente con JS para variar según tipo de transaccion -->
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tx-fecha">Fecha</label>
+                            <input type="date" id="tx-fecha" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tx-metodo">Método de Pago</label>
+                            <select id="tx-metodo" required>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+                                <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tx-descripcion">Descripción / Nota</label>
+                            <input type="text" id="tx-descripcion" placeholder="Ej. Supermercado semanal">
+                        </div>
+
+                        <button type="submit" class="btn">Guardar Registro</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANTALLA: LISTADO DE TRANSACCIONES Y FILTROS -->
+        <section id="transactions-view" class="view-section">
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">Historial de Transacciones</h3>
+                
+                <!-- Filtros Interactivos -->
+                <div class="filters">
+                    <div>
+                        <select id="filter-mes">
+                            <option value="todos">Todos los Meses</option>
+                            <option value="0">Enero</option>
+                            <option value="1">Febrero</option>
+                            <option value="2">Marzo</option>
+                            <option value="3">Abril</option>
+                            <option value="4">Mayo</option>
+                            <option value="5">Junio</option>
+                            <option value="6">Julio</option>
+                            <option value="7">Agosto</option>
+                            <option value="8">Septiembre</option>
+                            <option value="9">Octubre</option>
+                            <option value="10">Noviembre</option>
+                            <option value="11">Diciembre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="filter-categoria">
+                            <option value="todas">Todas las Categorías</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Contenedor del listado -->
+                <div class="transaction-list" id="transaction-list-container">
+                    <!-- Se rellena dinámicamente con JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- PANTALLA: CONFIGURACIÓN DE PRESUPUESTOS -->
+        <section id="budgets-view" class="view-section">
+            <div class="dashboard-grid">
+                <!-- Configuración de Límite -->
+                <div class="card">
+                    <h3 style="margin-bottom: 16px;">Establecer Límites de Gasto</h3>
+                    <form id="budget-form">
+                        <div class="form-group">
+                            <label for="budget-categoria">Categoría</label>
+                            <select id="budget-categoria" required>
+                                <option value="Comida">Comida</option>
+                                <option value="Servicios">Servicios</option>
+                                <option value="Salidas/Entretenimiento">Salidas/Entretenimiento</option>
+                                <option value="Transporte">Transporte</option>
+                                <option value="Salud">Salud</option>
+                                <option value="Educación">Educación</option>
+                                <option value="Otros Gastos">Otros Gastos</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="budget-monto">Monto Límite Mensual</label>
+                            <input type="number" step="0.01" id="budget-monto" placeholder="0.00" required>
+                        </div>
+                        <button type="submit" class="btn">Guardar Presupuesto</button>
+                    </form>
+                </div>
+
+                <!-- Progreso de Presupuestos -->
+                <div class="card">
+                    <h3 style="margin-bottom: 16px;">Control de Presupuesto</h3>
+                    <div id="budget-progress-container">
+                        <!-- Rellenado dinámicamente con JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANTALLA: CONFIGURACIÓN ADICIONAL / BORRAR CREDENCIALES -->
+        <section id="config-view" class="view-section">
+            <div class="card config-box">
+                <h3 style="margin-bottom: 12px; font-size: 1.4rem;">Ajustes de Sincronización</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem;">
+                    Tu cuenta y datos actualmente se sincronizan con Supabase. Si deseas cambiar de base de datos o desconectarte, puedes restablecer las credenciales aquí.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="form-group">
+                        <label>URL actual configurada</label>
+                        <input type="text" id="current-url" readonly style="opacity: 0.7;">
+                    </div>
+                    <button id="btn-reset-setup" class="btn btn-secondary">Desconectar Supabase</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navegación Móvil (Bottom Bar) -->
+        <nav class="nav-mobile" id="nav-mobile">
+            <a class="nav-mobile-item active" data-target="dashboard-view">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                <span>Dashboard</span>
+            </a>
+            <a class="nav-mobile-item" data-target="transactions-view">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                <span>Transacciones</span>
+            </a>
+            <a class="nav-mobile-item" data-target="budgets-view">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                <span>Límites</span>
+            </a>
+            <a class="nav-mobile-item" data-target="config-view">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <span>Ajustes</span>
+            </a>
+        </nav>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
