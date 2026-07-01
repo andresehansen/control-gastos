@@ -101,34 +101,26 @@ function configurarTecladoPIN() {
 
 // Lógica de Autoconfiguración automática de credenciales de Supabase
 async function cargarCredencialesSupabase() {
-    // Apuntamos al proyecto inicial de Supabase donde cargaste los datos tempranos
-    const url = 'https://fffxndnfvthplrnunofb.supabase.co';
+    // La URL de tu base de datos Supabase unificada y correcta
+    const url = 'https://fffxmdnfvthplrrunofb.supabase.co';
+    
+    // Tu API Key pública (Publishable Key) real de Supabase
     const key = 'sb_publishable_mKFeDypQoPibw38FP3U47A_-aOd_Cuj';
 
     try {
         // Inicializar cliente Supabase de forma directa
         supabaseClient = supabase.createClient(url, key);
         
-        // Consultar directamente los datos de la base de datos vieja de forma libre
-        // sin requerir un login que active AdBlock o rate limits
-        let { data, error } = await supabaseClient
-            .from('transacciones')
-            .select('*');
-
+        // Autenticar de manera transparente en segundo plano sin pedir logins
+        const { data, error } = await supabaseClient.auth.signInAnonymously();
         if (error) throw error;
 
-        if (data && data.length > 0) {
-            transacciones = data;
-            actualizarResumenFinanciero();
-            renderizarTransaccionesYFiltros();
-            renderizarReportesAgrupados('dia');
-            alert('¡Encontrados ' + data.length + ' registros anteriores! Cópialos en la consola.');
-            console.log('TRANSACCIONES_RESPALDO:', JSON.stringify(data));
-        } else {
-            alert('Conectado a la base de datos vieja, pero la tabla transacciones está vacía aquí también.');
-        }
+        currentUser = data.user;
+        
+        // Cargar los datos directamente en el dashboard
+        await cargarDatos();
     } catch (error) {
-        console.error('Error al intentar leer de la base de datos vieja:', error.message);
+        console.error('Error al conectar e iniciar sesión en Supabase:', error.message);
     }
 }
 
