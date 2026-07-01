@@ -600,11 +600,6 @@ function inicializarNavegacion() {
             e.preventDefault();
             const target = link.dataset.target || link.getAttribute('data-target');
             if (target) {
-                // Si la sesión no está activa, redirigir a la pantalla de login (auth)
-                if (!currentUser) {
-                    mostrarVista('auth');
-                    return;
-                }
                 mostrarVista(target.replace('-view', ''));
             }
         });
