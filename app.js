@@ -11,6 +11,7 @@ let supabaseClient = null;
 let currentUser = null;
 let transacciones = [];
 let presupuestos = [];
+let transaccionEnEdicionId = null; // Almacena el ID del registro que se está editando
 
 // Instancias de Gráficos (para destruirlos/re-renderizarlos)
 let chartPieInstance = null;
@@ -287,26 +288,44 @@ async function guardarTransaccion(e) {
     const descripcion = document.getElementById('tx-descripcion').value.trim();
 
     try {
-        const { error } = await supabaseClient
-            .from('transacciones')
-            .insert([{
-                user_id: currentUser.id,
-                pin,
-                monto,
-                tipo,
-                categoria,
-                fecha,
-                metodo_pago,
-                descripcion
-            }]);
+        let error;
+
+        if (transaccionEnEdicionId) {
+            // Modo Edición: Actualizar registro existente
+            const res = await supabaseClient
+                .from('transacciones')
+                .update({
+                    monto,
+                    tipo,
+                    categoria,
+                    fecha,
+                    metodo_pago,
+                    descripcion
+                })
+                .eq('id', transaccionEnEdicionId);
+            error = res.error;
+        } else {
+            // Modo Normal: Crear registro nuevo
+            const res = await supabaseClient
+                .from('transacciones')
+                .insert([{
+                    user_id: currentUser.id,
+                    pin,
+                    monto,
+                    tipo,
+                    categoria,
+                    fecha,
+                    metodo_pago,
+                    descripcion
+                }]);
+            error = res.error;
+        }
 
         if (error) throw error;
 
-        document.getElementById('tx-form').reset();
-        cambiarCategoriasFormulario(tipo);
-        establecerFechaHoy();
+        cancelarEdicion();
         await cargarDatos();
-        alert('Registro guardado exitosamente.');
+        alert(transaccionEnEdicionId ? 'Registro actualizado exitosamente.' : 'Registro guardado exitosamente.');
     } catch (error) {
         alert('Error al guardar: ' + error.message);
     }
@@ -489,10 +508,17 @@ function renderizarTransaccionesYFiltros() {
             </div>
             <div class="tx-amount-area">
                 <span class="tx-amount ${t.tipo}">${sign}$${Math.abs(t.monto).toFixed(2)}</span>
+                <button class="btn-edit" data-id="${t.id}" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.1rem; padding:4px; transition:var(--transition); margin-right:4px;">✏️</button>
                 <button class="btn-delete" data-id="${t.id}">✕</button>
             </div>
         `;
         
+        // Asignar evento de edición
+        item.querySelector('.btn-edit').addEventListener('click', (e) => {
+            const id = e.target.dataset.id || e.target.parentElement.dataset.id;
+            iniciarEdicionTransaccion(id);
+        });
+
         // Asignar evento de borrado
         item.querySelector('.btn-delete').addEventListener('click', (e) => {
             eliminarTransaccion(e.target.dataset.id);
@@ -838,4 +864,83 @@ function renderizarReportesAgrupados(rango = 'dia') {
         container.appendChild(card);
     });
 }
+
+// Inicia el modo de edición rellenando los datos de la transacción en el formulario
+function iniciarEdicionTransaccion(id) {
+    const tx = transacciones.find(t => t.id === id);
+    if (!tx) return;
+
+    transaccionEnEdicionId = id;
+
+    // Cambiar tipo (gasto/ingreso) en los botones toggle
+    document.querySelectorAll('.btn-toggle').forEach(btn => {
+        if (btn.dataset.type === tx.tipo) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // Rellenar categorías basadas en el tipo
+    cambiarCategoriasFormulario(tx.tipo);
+
+    // Rellenar campos del formulario
+    document.getElementById('tx-monto').value = Math.abs(tx.monto);
+    document.getElementById('tx-categoria').value = tx.categoria;
+    document.getElementById('tx-fecha').value = tx.fecha;
+    document.getElementById('tx-metodo').value = tx.metodo_pago;
+    document.getElementById('tx-descripcion').value = tx.descripcion || '';
+
+    // Modificar botón guardar
+    const submitBtn = document.querySelector('#tx-form button[type="submit"]');
+    submitBtn.textContent = 'Actualizar Registro';
+    submitBtn.style.backgroundColor = 'var(--warning)';
+
+    // Crear y añadir botón de cancelar si no existe
+    let cancelBtn = document.getElementById('btn-cancel-edit');
+    if (!cancelBtn) {
+        cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.id = 'btn-cancel-edit';
+        cancelBtn.className = 'btn btn-secondary';
+        cancelBtn.style.marginTop = '8px';
+        cancelBtn.textContent = 'Cancelar Edición';
+        cancelBtn.addEventListener('click', cancelarEdicion);
+        submitBtn.parentNode.insertBefore(cancelBtn, submitBtn.nextSibling);
+    }
+
+    // Llevar al usuario a la vista de Dashboard donde está el formulario
+    mostrarVista('dashboard');
+}
+
+// Cancela la edición y limpia el formulario
+function cancelarEdicion() {
+    transaccionEnEdicionId = null;
+
+    // Resetear formulario
+    document.getElementById('tx-form').reset();
+    
+    // Configurar tipo gasto por defecto
+    document.querySelectorAll('.btn-toggle').forEach(btn => {
+        if (btn.dataset.type === 'gasto') {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    cambiarCategoriasFormulario('gasto');
+    establecerFechaHoy();
+
+    // Restablecer botón
+    const submitBtn = document.querySelector('#tx-form button[type="submit"]');
+    submitBtn.textContent = 'Guardar Registro';
+    submitBtn.style.backgroundColor = 'var(--primary)';
+
+    // Eliminar botón cancelar
+    const cancelBtn = document.getElementById('btn-cancel-edit');
+    if (cancelBtn) {
+        cancelBtn.remove();
+    }
+}
+
 
