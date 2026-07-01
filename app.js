@@ -130,7 +130,7 @@ function cargarCredencialesSupabase() {
     } else {
         // En caso de primer ingreso en un dispositivo nuevo (como el celular de tu novia),
         // he dejado guardado tu key anon en el código a continuación para que la app se conecte automáticamente:
-        const defaultAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmZnhuZG5mdnRocGxybnVub2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDQxMTUyMDAsImV4cCI6MjAxOTY5MTIwMH0.u2rLgq98N1vQWJ57rV1k1Zt_3SDF4Jb1V5Z7Y4a1d20'; // Llave pública de tu proyecto Supabase extraída de tu configuración previa
+        const defaultAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmZnhuZG5mdnRocGxybnVub2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDQxMTUyMDAsImV4cCI6MjAxOTY5MTIwMH0.u2rLgq98N1vQWJ57rV1k1Zt_3SDF4Jb1V5Z7Y4a1d2o'; // Llave pública de tu proyecto Supabase corregida al final con la letra 'o' minúscula
         
         try {
             // Inicializar Supabase directamente
