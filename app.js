@@ -95,9 +95,23 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('filter-categoria').addEventListener('change', renderizarTransaccionesYFiltros);
 });
 
-// Configuración de los botones del teclado PIN en pantalla
+// Configuración de los botones del teclado PIN en pantalla y teclado físico
 function configurarTecladoPIN() {
     const pinInput = document.getElementById('auth-pin');
+    
+    // Permitir escribir solo números usando el teclado físico de la PC
+    pinInput.addEventListener('keydown', (e) => {
+        // Permitir teclas de control como backspace, delete, tab, escape, enter, flechas
+        const controlKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight'];
+        if (controlKeys.includes(e.key)) {
+            return;
+        }
+        // Bloquear si no es un número o si ya llegó al límite de 12 caracteres
+        if (!/^[0-9]$/.test(e.key) || pinInput.value.length >= 12) {
+            e.preventDefault();
+        }
+    });
+
     document.querySelectorAll('.btn-pin').forEach(btn => {
         btn.addEventListener('click', () => {
             const val = btn.dataset.val;
@@ -151,8 +165,8 @@ async function manejarAutenticacionPIN(e) {
         return;
     }
 
-    // Generamos un correo y una contraseña únicos a partir de este PIN
-    const email = `pin_${pin}@finanzaspro.local`;
+    // Usamos dominio .com para que Supabase no rechace el correo por formato inválido
+    const email = `pin_${pin}@finanzaspro.com`;
     const password = `super_secure_pass_${pin}`;
 
     try {
