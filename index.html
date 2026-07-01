@@ -29,34 +29,9 @@
                 <a class="nav-link" data-target="transactions-view">Transacciones</a>
                 <a class="nav-link" data-target="reports-view">Reportes</a>
                 <a class="nav-link" data-target="budgets-view">Presupuestos</a>
-                <a class="nav-link" data-target="config-view">Configuración</a>
                 <a class="nav-link" id="btn-logout" style="display: none; color: var(--danger);">Cerrar Sesión</a>
             </nav>
         </header>
-
-        <!-- PANTALLA: CONFIGURACIÓN INICIAL / CREDENCIALES (SUPABASE) -->
-        <section id="setup-view" class="view-section">
-            <div class="card config-box">
-                <h3 style="margin-bottom: 12px; font-size: 1.4rem;">Configuración de Sincronización</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem;">
-                    Para sincronizar tu celular y PC, necesitamos conectar tu base de datos gratuita de Supabase. A continuación, ingresa las credenciales obtenidas al crear tu cuenta.
-                </p>
-                <form id="setup-form">
-                    <div class="form-group">
-                        <label for="setup-url">SUPABASE URL</label>
-                        <input type="url" id="setup-url" placeholder="https://xxxxxx.supabase.co" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="setup-key">SUPABASE ANON KEY</label>
-                        <input type="password" id="setup-key" placeholder="Tu Anon Key pública" required>
-                    </div>
-                    <button type="submit" class="btn">Guardar y Conectar</button>
-                </form>
-                <div style="margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); text-align: center;">
-                    Tus credenciales se guardan localmente en tu dispositivo y nunca se comparten públicamente.
-                </div>
-            </div>
-        </section>
 
         <!-- PANTALLA: AUTENTICACIÓN (LOGIN POR PIN) -->
         <section id="auth-view" class="view-section active">
@@ -283,23 +258,6 @@
             </div>
         </section>
 
-        <!-- PANTALLA: CONFIGURACIÓN ADICIONAL / BORRAR CREDENCIALES -->
-        <section id="config-view" class="view-section">
-            <div class="card config-box">
-                <h3 style="margin-bottom: 12px; font-size: 1.4rem;">Ajustes de Sincronización</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem;">
-                    Tu cuenta y datos actualmente se sincronizan con Supabase. Si deseas cambiar de base de datos o desconectarte, puedes restablecer las credenciales aquí.
-                </p>
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <div class="form-group">
-                        <label>URL actual configurada</label>
-                        <input type="text" id="current-url" readonly style="opacity: 0.7;">
-                    </div>
-                    <button id="btn-reset-setup" class="btn btn-secondary">Desconectar Supabase</button>
-                </div>
-            </div>
-        </section>
-
         <!-- Navegación Móvil (Bottom Bar) -->
         <nav class="nav-mobile" id="nav-mobile">
             <a class="nav-mobile-item active" data-target="dashboard-view">
@@ -318,13 +276,9 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
                 <span>Límites</span>
             </a>
-            <a class="nav-mobile-item" data-target="config-view">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                <span>Ajustes</span>
-            </a>
         </nav>
     </div>
 
-    <script src="app.js?v=5"></script>
+    <script src="app.js?v=6"></script>
 </body>
 </html>
