@@ -29,43 +29,11 @@
                 <a class="nav-link" data-target="transactions-view">Transacciones</a>
                 <a class="nav-link" data-target="reports-view">Reportes</a>
                 <a class="nav-link" data-target="budgets-view">Presupuestos</a>
-                <a class="nav-link" id="btn-logout" style="display: none; color: var(--danger);">Cerrar Sesión</a>
             </nav>
         </header>
 
-        <!-- PANTALLA: AUTENTICACIÓN (LOGIN POR PIN) -->
-        <section id="auth-view" class="view-section active">
-            <div class="card auth-container" style="text-align: center;">
-                <h3 style="margin-bottom: 8px; font-size: 1.4rem;">Acceso a FinanzasPro</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 0.9rem;">Ingresa tu código numérico de acceso</p>
-
-                <form id="auth-form" style="display: flex; flex-direction: column; align-items: center;">
-                    <input type="password" id="auth-pin" maxlength="12" placeholder="••••••••" 
-                           style="text-align: center; font-size: 1.8rem; letter-spacing: 0.3em; width: 100%; max-width: 280px; margin-bottom: 24px; background: var(--bg-tertiary);">
-                    
-                    <!-- Teclado Numérico Visual para Celular/PC -->
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 280px; margin-bottom: 24px;">
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="1" style="padding: 16px; font-size: 1.2rem;">1</button>
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="2" style="padding: 16px; font-size: 1.2rem;">2</button>
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="3" style="padding: 16px; font-size: 1.2rem;">3</button>
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="4" style="padding: 16px; font-size: 1.2rem;">4</button>
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="5" style="padding: 16px; font-size: 1.2rem;">5</button>
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="6" style="padding: 16px; font-size: 1.2rem;">6</button>
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="7" style="padding: 16px; font-size: 1.2rem;">7</button>
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="8" style="padding: 16px; font-size: 1.2rem;">8</button>
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="9" style="padding: 16px; font-size: 1.2rem;">9</button>
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="clear" style="padding: 16px; font-size: 1.1rem; color: var(--danger);">C</button>
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="0" style="padding: 16px; font-size: 1.2rem;">0</button>
-                        <button type="button" class="btn btn-secondary btn-pin" data-val="back" style="padding: 16px; font-size: 1.1rem;">⌫</button>
-                    </div>
-
-                    <button type="submit" class="btn" style="width: 100%; max-width: 280px;">Ingresar</button>
-                </form>
-            </div>
-        </section>
-
         <!-- PANTALLA: DASHBOARD PRINCIPAL -->
-        <section id="dashboard-view" class="view-section">
+        <section id="dashboard-view" class="view-section active">
             <!-- Tarjetas de Resumen Financiero -->
             <div class="summary-grid">
                 <div class="card summary-card">
@@ -279,6 +247,6 @@
         </nav>
     </div>
 
-    <script src="app.js?v=8"></script>
+    <script src="app.js?v=10"></script>
 </body>
 </html>

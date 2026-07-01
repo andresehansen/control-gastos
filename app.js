@@ -53,15 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Registrar presupuesto
     document.getElementById('budget-form').addEventListener('submit', guardarPresupuesto);
 
-    // Registrar / Iniciar Sesión de usuario con PIN
-    document.getElementById('auth-form').addEventListener('submit', manejarAutenticacionPIN);
-    
-    // Configurar teclado numérico visual de PIN
-    configurarTecladoPIN();
-
-    // Botón de cerrar sesión
-    document.getElementById('btn-logout').addEventListener('click', cerrarSesion);
-
     // Filtros interactivos
     document.getElementById('filter-mes').addEventListener('change', renderizarTransaccionesYFiltros);
     document.getElementById('filter-categoria').addEventListener('change', renderizarTransaccionesYFiltros);
@@ -110,9 +101,13 @@ function configurarTecladoPIN() {
 }
 
 // Lógica de Autoconfiguración automática de credenciales de Supabase
-function cargarCredencialesSupabase() {
-    // La URL de tu base de datos Supabase corregida con UNA SOLA 'r'
-    const url = 'https://fffxmdnfvthplrnunofb.supabase.co';
+async function cargarCredencialesSupabase() {
+    // Forzar la limpieza de variables viejas de LocalStorage que puedan interferir en caché
+    localStorage.removeItem('supabase_url');
+    localStorage.removeItem('supabase_key');
+
+    // La URL de tu base de datos Supabase corregida (plrnunofb, una sola r)
+    const url = 'https://fffxndnfvthplrnunofb.supabase.co';
     
     // Tu API Key pública (Publishable Key) real de Supabase
     const key = 'sb_publishable_mKFeDypQoPibw38FP3U47A_-aOd_Cuj';
@@ -120,72 +115,17 @@ function cargarCredencialesSupabase() {
     try {
         // Inicializar cliente Supabase de forma directa
         supabaseClient = supabase.createClient(url, key);
-        comprobarSesionActiva();
-    } catch (error) {
-        alert('Error crítico de conexión inicial con Supabase: ' + error.message);
-        console.error('Error al conectar a Supabase:', error.message);
-    }
-}
-
-// ==========================================================================
-// 2. SISTEMA DE AUTENTICACIÓN POR PIN
-// ==========================================================================
-
-async function manejarAutenticacionPIN(e) {
-    e.preventDefault();
-    if (!supabaseClient) return;
-
-    const pin = document.getElementById('auth-pin').value;
-    if (!pin) {
-        alert('Por favor ingresa tu PIN.');
-        return;
-    }
-
-    try {
-        // Para sincronizar PC y Celular sin usar correos electrónicos ni gatillar el rate limit,
-        // utilizaremos un sistema de inicio de sesión anónimo en Supabase.
-        // Iniciamos sesión de manera anónima
+        
+        // Autenticar anónimamente de manera transparente en segundo plano
         const { data, error } = await supabaseClient.auth.signInAnonymously();
-
         if (error) throw error;
 
-        // Guardamos el PIN ingresado localmente como identificador para filtrar los datos.
-        // Aunque la sesión de Supabase sea anónima, asociaremos las transacciones
-        // a este PIN específico en la base de datos para que si cambias de PIN o dispositivo,
-        // se acceda a la base de datos correcta.
         currentUser = data.user;
         
-        // Guardamos el PIN en LocalStorage para identificar los datos del usuario actual
-        localStorage.setItem('user_pin', pin);
-
-        document.getElementById('btn-logout').style.display = 'block';
-        mostrarVista('dashboard');
+        // Cargar los datos directamente en el dashboard activo
         await cargarDatos();
     } catch (error) {
-        alert('Error en acceso por PIN: ' + error.message);
-    }
-}
-
-async function comprobarSesionActiva() {
-    const { data: { session }, error } = await supabaseClient.auth.getSession();
-    if (session) {
-        currentUser = session.user;
-        document.getElementById('btn-logout').style.display = 'block';
-        mostrarVista('dashboard');
-        await cargarDatos();
-    } else {
-        mostrarVista('auth');
-    }
-}
-
-async function cerrarSesion() {
-    if (supabaseClient) {
-        await supabaseClient.auth.signOut();
-        currentUser = null;
-        transacciones = [];
-        presupuestos = [];
-        document.getElementById('btn-logout').style.display = 'none';
-        mostrarVista('auth');
+        console.error('Error al conectar e iniciar sesión de forma libre en Supabase:', error.message);
     }
 }
 
@@ -196,25 +136,20 @@ async function cerrarSesion() {
 async function cargarDatos() {
     if (!supabaseClient || !currentUser) return;
 
-    const pin = localStorage.getItem('user_pin');
-    if (!pin) return;
-
     try {
-        // Cargar Transacciones filtradas por el PIN
+        // Cargar todas las transacciones sin filtrar por PIN
         let { data: txData, error: txError } = await supabaseClient
             .from('transacciones')
             .select('*')
-            .eq('pin', pin)
             .order('fecha', { ascending: false });
 
         if (txError) throw txError;
         transacciones = txData || [];
 
-        // Cargar Presupuestos filtrados por el PIN
+        // Cargar todos los presupuestos
         let { data: bData, error: bError } = await supabaseClient
             .from('presupuestos')
-            .select('*')
-            .eq('pin', pin);
+            .select('*');
 
         if (bError) throw bError;
         presupuestos = bData || [];
@@ -240,9 +175,6 @@ async function cargarDatos() {
 async function guardarTransaccion(e) {
     e.preventDefault();
     if (!supabaseClient || !currentUser) return;
-
-    const pin = localStorage.getItem('user_pin');
-    if (!pin) return;
 
     const tipo = document.querySelector('.btn-toggle.active').dataset.type;
     const rawMonto = parseFloat(document.getElementById('tx-monto').value);
@@ -275,7 +207,6 @@ async function guardarTransaccion(e) {
                 .from('transacciones')
                 .insert([{
                     user_id: currentUser.id,
-                    pin,
                     monto,
                     tipo,
                     categoria,
@@ -317,15 +248,12 @@ async function guardarPresupuesto(e) {
     e.preventDefault();
     if (!supabaseClient || !currentUser) return;
 
-    const pin = localStorage.getItem('user_pin');
-    if (!pin) return;
-
     const categoria = document.getElementById('budget-categoria').value;
     const monto_limite = parseFloat(document.getElementById('budget-monto').value);
 
     try {
-        // Comprobar si ya existe presupuesto para esa categoría para este PIN
-        const existe = presupuestos.find(b => b.categoria === categoria && b.pin === pin);
+        // Comprobar si ya existe presupuesto para esa categoría de forma unificada
+        const existe = presupuestos.find(b => b.categoria === categoria);
         
         let error;
         if (existe) {
@@ -337,7 +265,7 @@ async function guardarPresupuesto(e) {
         } else {
             let res = await supabaseClient
                 .from('presupuestos')
-                .insert([{ user_id: currentUser.id, pin, categoria, monto_limite }]);
+                .insert([{ user_id: currentUser.id, categoria, monto_limite }]);
             error = res.error;
         }
 
