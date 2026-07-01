@@ -81,12 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Registrar presupuesto
     document.getElementById('budget-form').addEventListener('submit', guardarPresupuesto);
 
-    // Registrar / Iniciar Sesión de usuario
-    document.getElementById('auth-form').addEventListener('submit', manejarAutenticacion);
+    // Registrar / Iniciar Sesión de usuario con PIN
+    document.getElementById('auth-form').addEventListener('submit', manejarAutenticacionPIN);
     
-    // Tabs de Auth (Cambiar entre Login y Registro)
-    document.getElementById('tab-login').addEventListener('click', () => cambiarAuthTab('login'));
-    document.getElementById('tab-register').addEventListener('click', () => cambiarAuthTab('register'));
+    // Configurar teclado numérico visual de PIN
+    configurarTecladoPIN();
 
     // Botón de cerrar sesión
     document.getElementById('btn-logout').addEventListener('click', cerrarSesion);
@@ -95,6 +94,25 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('filter-mes').addEventListener('change', renderizarTransaccionesYFiltros);
     document.getElementById('filter-categoria').addEventListener('change', renderizarTransaccionesYFiltros);
 });
+
+// Configuración de los botones del teclado PIN en pantalla
+function configurarTecladoPIN() {
+    const pinInput = document.getElementById('auth-pin');
+    document.querySelectorAll('.btn-pin').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = btn.dataset.val;
+            if (val === 'clear') {
+                pinInput.value = '';
+            } else if (val === 'back') {
+                pinInput.value = pinInput.value.slice(0, -1);
+            } else {
+                if (pinInput.value.length < 12) {
+                    pinInput.value += val;
+                }
+            }
+        });
+    });
+}
 
 // Cargar credenciales guardadas en LocalStorage
 function cargarCredencialesSupabase() {
@@ -120,40 +138,34 @@ function cargarCredencialesSupabase() {
 }
 
 // ==========================================================================
-// 2. SISTEMA DE AUTENTICACIÓN
+// 2. SISTEMA DE AUTENTICACIÓN POR PIN
 // ==========================================================================
 
-let authMode = 'login'; // 'login' o 'register'
-
-function cambiarAuthTab(mode) {
-    authMode = mode;
-    document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
-    
-    if (mode === 'login') {
-        document.getElementById('tab-login').classList.add('active');
-        document.getElementById('btn-auth-submit').textContent = 'Ingresar';
-    } else {
-        document.getElementById('tab-register').classList.add('active');
-        document.getElementById('btn-auth-submit').textContent = 'Registrarse';
-    }
-}
-
-async function manejarAutenticacion(e) {
+async function manejarAutenticacionPIN(e) {
     e.preventDefault();
     if (!supabaseClient) return;
 
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
+    const pin = document.getElementById('auth-pin').value;
+    if (!pin) {
+        alert('Por favor ingresa tu PIN.');
+        return;
+    }
+
+    // Generamos un correo y una contraseña únicos a partir de este PIN
+    const email = `pin_${pin}@finanzaspro.local`;
+    const password = `super_secure_pass_${pin}`;
 
     try {
-        let response;
-        if (authMode === 'login') {
+        // Intentar iniciar sesión
+        let response = await supabaseClient.auth.signInWithPassword({ email, password });
+
+        // Si el usuario no existe, lo registramos automáticamente de forma transparente
+        if (response.error && response.error.message.includes('Invalid login credentials')) {
+            let signUpResponse = await supabaseClient.auth.signUp({ email, password });
+            if (signUpResponse.error) throw signUpResponse.error;
+            
+            // Re-intentar login tras registro automático exitoso
             response = await supabaseClient.auth.signInWithPassword({ email, password });
-        } else {
-            response = await supabaseClient.auth.signUp({ email, password });
-            alert('¡Registro exitoso! Ya puedes iniciar sesión con tu cuenta.');
-            cambiarAuthTab('login');
-            return;
         }
 
         if (response.error) throw response.error;
@@ -163,7 +175,7 @@ async function manejarAutenticacion(e) {
         mostrarVista('dashboard');
         await cargarDatos();
     } catch (error) {
-        alert('Error en autenticación: ' + error.message);
+        alert('Error en acceso por PIN: ' + error.message);
     }
 }
 
@@ -339,21 +351,49 @@ function establecerFechaHoy() {
     document.getElementById('tx-fecha').value = today;
 }
 
-// Filtra las transacciones del mes en curso para los indicadores superiores
-function actualizarResumenFinanciero() {
+// Obtiene el rango del período actual: desde el último sueldo registrado hasta hoy
+function obtenerPeriodoActual() {
     const hoy = new Date();
-    const mesActual = hoy.getMonth();
-    const anioActual = hoy.getFullYear();
+    
+    // Buscar la transacción más reciente de tipo "ingreso" y categoría "Sueldo"
+    const ultimoSueldo = transacciones
+        .filter(t => t.monto > 0 && t.categoria === 'Sueldo')
+        .sort((a, b) => new Date(b.fecha + 'T00:00:00') - new Date(a.fecha + 'T00:00:00'))[0];
 
-    const transaccionesMes = transacciones.filter(t => {
+    let fechaInicio;
+    if (ultimoSueldo) {
+        fechaInicio = new Date(ultimoSueldo.fecha + 'T00:00:00');
+    } else {
+        // Por defecto, si no hay sueldo, inicia el 1 del mes en curso
+        fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    }
+    
+    return {
+        inicio: fechaInicio,
+        fin: hoy,
+        tieneSueldo: !!ultimoSueldo
+    };
+}
+
+// Filtra las transacciones del período en curso para los indicadores superiores
+function actualizarResumenFinanciero() {
+    const periodo = obtenerPeriodoActual();
+
+    // Transacciones que entran en el rango dinámico del período actual
+    const transaccionesPeriodo = transacciones.filter(t => {
         const f = new Date(t.fecha + 'T00:00:00');
-        return f.getMonth() === mesActual && f.getFullYear() === anioActual;
+        // Quitar horas para comparar solo fechas completas
+        const fCompare = new Date(f.getFullYear(), f.getMonth(), f.getDate());
+        const iCompare = new Date(periodo.inicio.getFullYear(), periodo.inicio.getMonth(), periodo.inicio.getDate());
+        const fiCompare = new Date(periodo.fin.getFullYear(), periodo.fin.getMonth(), periodo.fin.getDate());
+        
+        return fCompare >= iCompare && fCompare <= fiCompare;
     });
 
     let ingresos = 0;
     let gastos = 0;
 
-    transaccionesMes.forEach(t => {
+    transaccionesPeriodo.forEach(t => {
         if (t.monto > 0) ingresos += t.monto;
         else gastos += Math.abs(t.monto);
     });
@@ -369,6 +409,13 @@ function actualizarResumenFinanciero() {
         balanceEl.style.color = 'var(--danger)';
     } else {
         balanceEl.style.color = 'var(--success)';
+    }
+
+    // Mostrar badge informativo sobre el período
+    const formattedInicio = periodo.inicio.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+    const headerTitle = document.querySelector('#dashboard-view h3');
+    if (headerTitle) {
+        headerTitle.innerHTML = `Análisis de Gastos e Ingresos <span style="font-size: 0.85rem; font-weight: normal; color: var(--text-muted); background: var(--bg-tertiary); padding: 4px 10px; border-radius: 20px; margin-left: 8px;">Período: ${formattedInicio} - Hoy ${periodo.tieneSueldo ? '(Desde último Sueldo)' : ''}</span>`;
     }
 }
 
@@ -419,7 +466,7 @@ function renderizarTransaccionesYFiltros() {
     });
 }
 
-// Progreso mensual vs presupuestos límites establecidos
+// Progreso mensual vs presupuestos límites establecidos (basado en el período dinámico)
 function actualizarProgresoPresupuestos() {
     const container = document.getElementById('budget-progress-container');
     container.innerHTML = '';
@@ -429,16 +476,21 @@ function actualizarProgresoPresupuestos() {
         return;
     }
 
-    const hoy = new Date();
-    const mesActual = hoy.getMonth();
-    const anioActual = hoy.getFullYear();
+    const periodo = obtenerPeriodoActual();
 
     presupuestos.forEach(b => {
-        // Calcular gasto actual del mes para esta categoría
+        // Calcular gasto dentro de este período dinámico
         const gastado = transacciones
             .filter(t => {
                 const f = new Date(t.fecha + 'T00:00:00');
-                return t.tipo === 'gasto' && t.categoria === b.categoria && f.getMonth() === mesActual && f.getFullYear() === anioActual;
+                const fCompare = new Date(f.getFullYear(), f.getMonth(), f.getDate());
+                const iCompare = new Date(periodo.inicio.getFullYear(), periodo.inicio.getMonth(), periodo.inicio.getDate());
+                const fiCompare = new Date(periodo.fin.getFullYear(), periodo.fin.getMonth(), periodo.fin.getDate());
+
+                return t.tipo === 'gasto' && 
+                       t.categoria === b.categoria && 
+                       fCompare >= iCompare && 
+                       fCompare <= fiCompare;
             })
             .reduce((sum, t) => sum + Math.abs(t.monto), 0);
 
@@ -467,17 +519,19 @@ function actualizarProgresoPresupuestos() {
 // ==========================================================================
 
 function renderizarGraficos() {
-    const hoy = new Date();
-    const mesActual = hoy.getMonth();
-    const anioActual = hoy.getFullYear();
+    const periodo = obtenerPeriodoActual();
 
-    // 1. Datos para gráfico de Torta (Distribución de Gastos en el mes actual)
+    // 1. Datos para gráfico de Torta (Distribución de Gastos en el período actual)
     const gastosPorCat = {};
     CATEGORIAS_GASTOS.forEach(cat => gastosPorCat[cat] = 0);
 
     transacciones.forEach(t => {
         const f = new Date(t.fecha + 'T00:00:00');
-        if (t.tipo === 'gasto' && f.getMonth() === mesActual && f.getFullYear() === anioActual) {
+        const fCompare = new Date(f.getFullYear(), f.getMonth(), f.getDate());
+        const iCompare = new Date(periodo.inicio.getFullYear(), periodo.inicio.getMonth(), periodo.inicio.getDate());
+        const fiCompare = new Date(periodo.fin.getFullYear(), periodo.fin.getMonth(), periodo.fin.getDate());
+
+        if (t.tipo === 'gasto' && fCompare >= iCompare && fCompare <= fiCompare) {
             gastosPorCat[t.categoria] = (gastosPorCat[t.categoria] || 0) + Math.abs(t.monto);
         }
     });
@@ -511,11 +565,11 @@ function renderizarGraficos() {
             }
         });
     } else {
-        // Si no hay datos, mostrar vacío
         ctxPie.clearRect(0, 0, 300, 300);
     }
 
-    // 2. Datos para gráfico de Barras (Historial mensual últimos 4 meses)
+    // 2. Datos para gráfico de Barras (Historial de los últimos 4 períodos equivalentes en meses)
+    const hoy = new Date();
     const mesesNombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const ultimosMeses = [];
     for (let i = 3; i >= 0; i--) {
