@@ -19,7 +19,6 @@ let chartBarInstance = null;
 
 // Elementos del DOM
 const views = {
-    auth: document.getElementById('auth-view'),
     dashboard: document.getElementById('dashboard-view'),
     transactions: document.getElementById('transactions-view'),
     reports: document.getElementById('reports-view'),
