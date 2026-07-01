@@ -111,8 +111,8 @@ function configurarTecladoPIN() {
 
 // Lógica de Autoconfiguración automática de credenciales de Supabase
 function cargarCredencialesSupabase() {
-    // La URL de tu base de datos Supabase
-    const url = 'ttps://fffxndnfvthplrnunofb.supabase.co';
+    // La URL de tu base de datos Supabase corregida con UNA SOLA 'r'
+    const url = 'https://fffxmdnfvthplrnunofb.supabase.co';
     
     // Tu API Key pública (Publishable Key) real de Supabase
     const key = 'sb_publishable_mKFeDypQoPibw38FP3U47A_-aOd_Cuj';
@@ -122,8 +122,8 @@ function cargarCredencialesSupabase() {
         supabaseClient = supabase.createClient(url, key);
         comprobarSesionActiva();
     } catch (error) {
+        alert('Error crítico de conexión inicial con Supabase: ' + error.message);
         console.error('Error al conectar a Supabase:', error.message);
-        mostrarVista('auth');
     }
 }
 
