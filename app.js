@@ -112,7 +112,7 @@ function configurarTecladoPIN() {
 // Lógica de Autoconfiguración automática de credenciales de Supabase
 function cargarCredencialesSupabase() {
     // La URL de tu base de datos Supabase
-    const url = 'https://fffxmdnfvthplrrunofb.supabase.co';
+    const url = 'ttps://fffxndnfvthplrnunofb.supabase.co';
     
     // Tu API Key pública (Publishable Key) real de Supabase
     const key = 'sb_publishable_mKFeDypQoPibw38FP3U47A_-aOd_Cuj';
