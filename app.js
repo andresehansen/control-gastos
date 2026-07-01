@@ -19,13 +19,11 @@ let chartBarInstance = null;
 
 // Elementos del DOM
 const views = {
-    setup: document.getElementById('setup-view'),
     auth: document.getElementById('auth-view'),
     dashboard: document.getElementById('dashboard-view'),
     transactions: document.getElementById('transactions-view'),
     reports: document.getElementById('reports-view'),
-    budgets: document.getElementById('budgets-view'),
-    config: document.getElementById('config-view')
+    budgets: document.getElementById('budgets-view')
 };
 
 // ==========================================================================
@@ -47,34 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const type = e.target.dataset.type;
             cambiarCategoriasFormulario(type);
         });
-    });
-
-    // Guardar credenciales de Supabase
-    document.getElementById('setup-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        let url = document.getElementById('setup-url').value.trim();
-        const key = document.getElementById('setup-key').value.trim();
-        
-        // Limpiar URL si termina en barras o en /rest/v1/
-        url = url.replace(/\/+$/, ""); // Quita barras al final
-        url = url.replace(/\/rest\/v1$/, ""); // Quita rest/v1 si lo tiene
-        
-        localStorage.setItem('supabase_url', url);
-        localStorage.setItem('supabase_key', key);
-        
-        cargarCredencialesSupabase();
-    });
-
-    // Desconectar Supabase
-    document.getElementById('btn-reset-setup').addEventListener('click', () => {
-        if(confirm('¿Seguro que deseas desconectar la base de datos de Supabase? Se cerrará la sesión.')) {
-            localStorage.removeItem('supabase_url');
-            localStorage.removeItem('supabase_key');
-            supabaseClient = null;
-            currentUser = null;
-            mostrarVista('setup');
-            document.getElementById('btn-logout').style.display = 'none';
-        }
     });
 
     // Registrar transacciones
@@ -717,8 +687,8 @@ function inicializarNavegacion() {
             e.preventDefault();
             const target = link.dataset.target || link.getAttribute('data-target');
             if (target) {
-                // Si la sesión no está activa y no es la pantalla de setup, redirigir a login
-                if (!currentUser && target !== 'setup-view') {
+                // Si la sesión no está activa, redirigir a la pantalla de login (auth)
+                if (!currentUser) {
                     mostrarVista('auth');
                     return;
                 }
