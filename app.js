@@ -480,13 +480,15 @@ function renderizarTransaccionesYFiltros() {
             day: '2-digit', month: 'short', year: 'numeric'
         });
 
+        const sign = t.monto > 0 ? '+' : '-';
+
         item.innerHTML = `
             <div class="tx-info">
                 <h4>${t.categoria}</h4>
                 <span>${fechaFormateada} • ${t.metodo_pago} ${t.descripcion ? `• ${t.descripcion}` : ''}</span>
             </div>
             <div class="tx-amount-area">
-                <span class="tx-amount ${t.tipo}">$${Math.abs(t.monto).toFixed(2)}</span>
+                <span class="tx-amount ${t.tipo}">${sign}$${Math.abs(t.monto).toFixed(2)}</span>
                 <button class="btn-delete" data-id="${t.id}">✕</button>
             </div>
         `;
